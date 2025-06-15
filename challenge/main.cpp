@@ -1,20 +1,31 @@
-﻿#include <iostream>
-#include <conio.h>
+﻿#include <ncurses.h>
 #include "Hero.h"
-int main()
+
+
+int main(void)
 {
+    
     CMap GameMap;
     CHero Hero;
     bool isGameWorking = true;
+    setlocale(LC_ALL, "");
+    initscr();			/* Start curses mode 		*/
+    raw();				/* Line buffering disabled	*/
+    start_color();
     GameMap.renderSystemInitialize();
     GameMap.generateMap();
     GameMap.updateMap();
-    setlocale(LC_ALL, "");
     char key;
     do
     {
-        key = _getch();
+        key = getch();
+        if(key == 'q')
+        {
+            break;
+        }
         Hero.move(key, &GameMap);
+        GameMap.updateMap();
     } while (isGameWorking);
+	endwin();			/* End curses mode		  */
     return 0;
 }

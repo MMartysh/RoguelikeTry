@@ -1,15 +1,13 @@
 ﻿#include <iostream>
-#include <Windows.h>
 #include <ctime>
-#include <vector>
-#include <string>
-#include <conio.h>
+#include <curses.h>
+#include <cstring>
+#include <ncurses.h>
 #include "ConsoleColor.h"
 #include "Map.h"
-#include <stdio.h>
 #warning "Make a linked list from all entities that can move, so that you can efficiently track map changes" 
 static int SEED = 5;
-HANDLE m_hConsoleHandle = 0;
+// HANDLE m_hConsoleHandle = 0;
 static int hash[] = {208, 34, 231, 213, 32, 248, 233, 56, 161, 78, 24, 140, 71, 48, 140, 254, 245, 255, 247, 247, 40,
                      185, 248, 251, 245, 28, 124, 204, 204, 76, 36, 1, 107, 28, 234, 163, 202, 224, 245, 128, 167, 204,
                      9, 92, 217, 54, 239, 174, 173, 102, 193, 189, 190, 121, 100, 108, 167, 44, 43, 77, 180, 204, 8, 81,
@@ -76,27 +74,18 @@ float perlin2d(float x, float y, float freq, int depth)
 }
 const symbolColor mapSymbols[] =        
 {
-       /* {L'▓', White, Black},
-        {L'▲', DarkGray, Black},
-        {L'♠', Brown, Green},
-        {L'♦', Cyan, Black},
-        {L'¶', LightGreen, Black},
-        {L'░', LightBlue, Blue},
-        {L'☻', Red, Black},
-        {L'☺', Blue, Black},*/
-        {'#', White, Black},
-        {'o', DarkGray, Black},
-        {'T', Brown, Black},
-        {'*', Cyan, Black},
-        {',', LightGreen, Black},
-        {'~', LightBlue, Blue},
-        {'@', Red, Black},
-        {'@', Blue, Black},
+        {L'▓', COLOR_WHITE,   COLOR_BLACK},
+        {L'▲', COLOR_WHITE,   COLOR_BLACK},
+        {L'♠', COLOR_GREEN,   COLOR_BLACK},
+        {L'♦', COLOR_CYAN,    COLOR_BLACK},
+        {L'¶', COLOR_GREEN,   COLOR_BLACK},
+        {L'░', COLOR_BLUE,    COLOR_BLACK},
+        {L'☻', COLOR_RED,     COLOR_BLACK},
+        {L'☺', COLOR_YELLOW,  COLOR_BLACK},
 };
 
 CMap::CMap()
 {
-
 }
 CMap::~CMap()
 {
@@ -121,18 +110,19 @@ void CMap::createBorders()
 }
 void CMap::renderSystemInitialize()
 {
-    m_hConsoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
-    CONSOLE_CURSOR_INFO cursorInfo;
-    cursorInfo.dwSize = 1;
-    cursorInfo.bVisible = 0;
-    SetConsoleCursorInfo(m_hConsoleHandle, &cursorInfo);
-
     for (int x = 0; x < SCREEN_WIDTH; x++)
     {
         for (int y = 0; y < SCREEN_HEIGHT; y++)
         {
             m_aScreenBuffer[x][y] = 0;
         }
+    }
+	int starty = 3;	/* Calculating for a center placement */
+	int startx = 5;	/* of the window		*/
+	local_win = newwin(SCREEN_HEIGHT, SCREEN_WIDTH, starty, startx);
+    for( short colorNum = 0; colorNum < (sizeof(mapSymbols) / sizeof(mapSymbols[0])); colorNum++)
+    {
+        init_pair(colorNum + 1, mapSymbols[colorNum].symbolColor, mapSymbols[colorNum].backgroundColor);
     }
 }
 void CMap::renderSystemClear()
@@ -142,15 +132,14 @@ void CMap::renderSystemClear()
 
 void CMap::setConsoleCursor(int x, int y)
 {
-    COORD cursorCoord;
-    cursorCoord.X = x;
-    cursorCoord.Y = y;
-    SetConsoleCursorPosition(m_hConsoleHandle, cursorCoord);
-}
-void CMap::setConsoleColor(ConsoleColor symbolColor, ConsoleColor backgroundColor)
-{
-    unsigned char consoleColor = symbolColor | (backgroundColor << 4);
-    SetConsoleTextAttribute(m_hConsoleHandle, consoleColor);
+    cchar_t c =
+    {
+        .attr = COLOR_PAIR(m_aScreenBuffer[x][y] + 1),
+        .chars[0] = mapSymbols[m_aScreenBuffer[x][y]].symbol,
+        .chars[1] = L'\0'
+
+    };
+    mvwadd_wch(local_win, y, x, &c);
 }
 
 void CMap::generateMap()
@@ -177,9 +166,7 @@ void CMap::setSymbolNumber(int x, int y, short symbol)
 }
 void CMap::makeMapChange(int x, int y)
 {
-    setConsoleColor(mapSymbols[m_aScreenBuffer[x][y]].symbolColor, mapSymbols[m_aScreenBuffer[x][y]].backgroundColor);
     setConsoleCursor(x, y);
-    std::cout << mapSymbols[m_aScreenBuffer[x][y]].symbol;
     if(mapSymbols[m_aScreenBuffer[x][y]].symbol == Player)
     {
         setConsoleCursor(SCREEN_WIDTH + 2,SCREEN_HEIGHT + 2);
@@ -191,13 +178,16 @@ void CMap::makeMapChange(int x, int y)
 
 void CMap::updateMap()
 {
-    setConsoleCursor(0, 0);
     for (short i = 0; i < SCREEN_WIDTH; i++)
     {
         for (short k = 0; k < SCREEN_HEIGHT; k++)
         {
             makeMapChange(i, k);
+            // wprintw(win, string);
         }
-        std::cout << std::endl;
     }
+    box(local_win, 0 , 0);		/* 0, 0 gives default characters 
+					 * for the vertical and horizontal
+					 * lines			*/
+	wrefresh(local_win);		/* Show that box 		*/
 }

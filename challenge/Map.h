@@ -1,23 +1,22 @@
 #ifndef MAP_H
 #define MAP_H
-
-#include <vector>
-#include <Windows.h>
+#include <ncurses.h>
 #include "ConsoleColor.h"
 
 const short SCREEN_WIDTH=100;
 const short SCREEN_HEIGHT=50;
 struct symbolColor
 {
-    char symbol;
-    ConsoleColor symbolColor;
-    ConsoleColor backgroundColor;
+    wchar_t symbol;
+    int symbolColor;
+    int backgroundColor;
 };
 
 class CMap
 {
 private:
     short m_aScreenBuffer[SCREEN_WIDTH][SCREEN_HEIGHT];
+    WINDOW *local_win;
 public:
     CMap();
     ~CMap();
@@ -31,9 +30,8 @@ public:
     void renderSystemInitialize();
     void updateMap();
     void makeMapChange(int x, int y);
-    void setConsoleColor(ConsoleColor symbolColor, ConsoleColor backgroundColor);
-    ConsoleColor getTileColor(int x, int y);
-    ConsoleColor getSymbolColor(int x, int y);
+    int getTileColor(int x, int y);
+    int getSymbolColor(int x, int y);
     short getSymbolNumber(int x, int y);
     void setSymbolNumber(int x, int y, short symbol);
 };
